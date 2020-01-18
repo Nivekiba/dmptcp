@@ -1,0 +1,13 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+LKM_exit	LKM.c	/^module_exit(LKM_exit);$/;"	v
+LKM_exit	LKM.c	/^static void __exit LKM_exit(void)$/;"	f	file:
+LKM_init	LKM.c	/^module_init(LKM_init);$/;"	v
+LKM_init	LKM.c	/^static int __init LKM_init(void)$/;"	f	file:
+NIPQUAD	LKM.c	16;"	d	file:
+hfunc	LKM.c	/^static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)$/;"	f	file:
+nfho	LKM.c	/^static struct nf_hook_ops *nfho = NULL;$/;"	v	typeref:struct:nf_hook_ops	file:
