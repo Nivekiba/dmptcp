@@ -2,10 +2,17 @@
 #include <stdio.h>
 
 // Enumeration containing the differents types of messages
+/*
+    CONN_IN: establishment of connection between host of the same cluster
+    CONN_OUT: establishment of connection between host of different clusters
+    DATA: for exchanging data
+    RELEASE: to turn off connections
+*/
 enum MessageType {
-    CONN = 1,
-    DATA = 2,
-    RELEASE = 3
+    CONN_IN = 1,
+    CONN_OUT = 2,
+    DATA = 3,
+    RELEASE = 4
 }; 
 
 // Definition of the structure used to represent messages
