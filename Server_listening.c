@@ -16,7 +16,6 @@
 // Global variables
 struct Cluster cluster;
 
-
 // Process clients' requests
 void toClient(int sockfd) {
     char buff[] = "Bonjour"; 
@@ -76,7 +75,7 @@ void initiateConn() {
     toClient(sockfd);
 
     //RELEASE Function called
-    //close(sockfd); 
+    close(sockfd); 
        
 }
 

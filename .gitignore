@@ -1,10 +1,12 @@
 # Ignore compiled files
 
 !*.ko
+*.ko
 *.mod
 *.mod.c
 .*.cmd
 *.symvers
 *.o
-.vscode/
+.vscode
+.vscode-ctags
 modules.order
