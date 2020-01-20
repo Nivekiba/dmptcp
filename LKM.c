@@ -40,8 +40,8 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 	}
 	else if (iph->protocol == IPPROTO_TCP) {
 		tcph = tcp_hdr(skb);
-		//printk("source address: (%pI4)\ndestination adress: (%pI4)\nDestination port: %d", &(iph->saddr), &(iph->daddr), ntohs(tcph->dest));
-		return NF_DROP;
+		printk("source address: (%pI4)\ndestination adress: (%pI4)\nDestination port: %d", &(iph->saddr), &(iph->daddr), ntohs(tcph->dest));
+		return NF_ACCEPT;
 	}
 
 	if(iph->protocol==IPPROTO_ICMP) {
@@ -49,7 +49,7 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
         printk(KERN_INFO "IP header: original source: %d.%d.%d.%d\n", NIPQUAD(iph->saddr));
         printk(KERN_INFO "IP header: original destin: %d.%d.%d.%d\n", NIPQUAD(iph->daddr));
         //iph->daddr = iph->daddr ^ 0x10000000;
-		((unsigned char*)&(iph->daddr))[2] = 8;
+		((unsigned char*)&(iph->saddr))[2] = 9;
         printk(KERN_INFO "IP header: modified source: %d.%d.%d.%d\n", NIPQUAD(iph->saddr));
         printk(KERN_INFO "IP header: modified destin: %d.%d.%d.%d\n", NIPQUAD(iph->daddr));
         printk(KERN_INFO "=== END ICMP ===\n");
