@@ -19,6 +19,7 @@ enum MessageType {
 struct Message {
     enum MessageType type;
     unsigned short int port;
+    unsigned int num;
     char* data;
     char* signature;
 };
@@ -50,4 +51,8 @@ char* getData(struct Message* message) {
 
 char* getSignature(struct Message* message) {
     return message->signature;
+}
+
+unsigned int getNum(struct Message* message) {
+    return message->num;
 }

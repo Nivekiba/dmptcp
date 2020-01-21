@@ -9,22 +9,19 @@
 #include "datastructures/Message.h"
 
 
-#define PORT 2000
+#define PORT 3000
 #define SA struct sockaddr
 
-void toServer(int sockfd) {
-    int MAX = 50;
-    char buff[MAX]; 
-    int n; 
-    for (;;) { 
-        bzero(buff, MAX); 
-  
-        // read the message from client and copy it in buffer 
-        read(sockfd, buff, sizeof(buff)); 
-        // print buffer which contains the client contents 
-        printf("Received message: %s\t : ", buff); 
-    }    
-        
+
+// Global variables
+int token = 0;
+
+// Function prototypes
+int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers);
+
+void toServer(int sockfd, int *token) {
+    send(sockfd , token , sizeof(int) , 0 ); 
+    printf("Message sent to the server");
 }
 
 void connectToServer(struct sockaddr_in servaddr) {
@@ -47,17 +44,29 @@ void connectToServer(struct sockaddr_in servaddr) {
     else
         printf("connected to the server..\n"); 
   
-    // function for chat 
-    toServer(sockfd); 
+    printf("sockfd = %d", sockfd);
+    
+    // function for communication
+    toServer(sockfd, &token); 
   
     // close the socket 
     // RELEASE Function called
     //close(sockfd); 
 }
 
-void main() {
+int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers) {
+    int token_ = 0;
+    int i = 0;
+    for (i = 0; i < number_of_servers; i++)
+    {
+        token_ += (server_addresses+i)->sin_addr.s_addr;
+    }
+    return token_;
+}
 
-    int number_of_outside_servers = 2;
+int main() {
+
+    int number_of_outside_servers = 1;
     struct sockaddr_in *servaddr_array = calloc(number_of_outside_servers,
                                                 sizeof(servaddr_array[0]));
 
@@ -67,11 +76,16 @@ void main() {
     servaddr_array[0].sin_addr.s_addr = inet_addr("127.0.0.1"); 
     servaddr_array[0].sin_port = htons(PORT);
 
-    servaddr_array[1].sin_family = AF_INET; 
+    
+    /*servaddr_array[1].sin_family = AF_INET; 
     servaddr_array[1].sin_addr.s_addr = inet_addr("127.0.0.1"); 
-    servaddr_array[1].sin_port = htons(PORT);
+    servaddr_array[1].sin_port = htons(PORT);*/
+    
 
     //************************************************************************
+
+    // Generate token 
+    token = generateToken(servaddr_array, number_of_outside_servers);
 
     int i = 0;
 
@@ -79,6 +93,6 @@ void main() {
     {
         connectToServer(servaddr_array[i]);
     }
-    
+    printf("token = %d", generateToken(servaddr_array, number_of_outside_servers));
 
 }
