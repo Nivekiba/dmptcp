@@ -12,8 +12,16 @@
 #define PORT 3000
 #define SA struct sockaddr
 
-void toServer(int sockfd) {
-       
+
+// Global variables
+int token = 0;
+
+// Function prototypes
+int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers);
+
+void toServer(int sockfd, int *token) {
+    send(sockfd , token , sizeof(int) , 0 ); 
+    printf("Message sent to the server");
 }
 
 void connectToServer(struct sockaddr_in servaddr) {
@@ -38,12 +46,22 @@ void connectToServer(struct sockaddr_in servaddr) {
   
     printf("sockfd = %d", sockfd);
     
-    // function for chat 
-    toServer(sockfd); 
+    // function for communication
+    toServer(sockfd, &token); 
   
     // close the socket 
     // RELEASE Function called
     //close(sockfd); 
+}
+
+int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers) {
+    int token_ = 0;
+    int i = 0;
+    for (i = 0; i < number_of_servers; i++)
+    {
+        token_ += (server_addresses+i)->sin_addr.s_addr;
+    }
+    return token_;
 }
 
 int main() {
@@ -58,13 +76,16 @@ int main() {
     servaddr_array[0].sin_addr.s_addr = inet_addr("127.0.0.1"); 
     servaddr_array[0].sin_port = htons(PORT);
 
-    /*
-    servaddr_array[1].sin_family = AF_INET; 
+    
+    /*servaddr_array[1].sin_family = AF_INET; 
     servaddr_array[1].sin_addr.s_addr = inet_addr("127.0.0.1"); 
-    servaddr_array[1].sin_port = htons(PORT);
-    */
+    servaddr_array[1].sin_port = htons(PORT);*/
+    
 
     //************************************************************************
+
+    // Generate token 
+    token = generateToken(servaddr_array, number_of_outside_servers);
 
     int i = 0;
 
@@ -72,6 +93,6 @@ int main() {
     {
         connectToServer(servaddr_array[i]);
     }
-    
+    printf("token = %d", generateToken(servaddr_array, number_of_outside_servers));
 
 }

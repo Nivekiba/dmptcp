@@ -18,8 +18,10 @@ struct Cluster cluster;
 
 
 // Process clients' requests
-void toClient(int sockfd) {
-   
+void toClient(int connfd) {
+   int token[1] = {0};
+   int  valread = read( connfd , token, 1024); 
+    printf("From client = %d", token[0]);
 }
 
 
@@ -71,7 +73,7 @@ void initiateConn() {
         else
             printf("server acccept the client...\n");
         // process client requests here
-        toClient(sockfd);     
+        toClient(connfd);     
     }
     
 
