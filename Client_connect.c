@@ -9,22 +9,11 @@
 #include "datastructures/Message.h"
 
 
-#define PORT 2000
+#define PORT 3000
 #define SA struct sockaddr
 
 void toServer(int sockfd) {
-    int MAX = 50;
-    char buff[MAX]; 
-    int n; 
-    for (;;) { 
-        bzero(buff, MAX); 
-  
-        // read the message from client and copy it in buffer 
-        read(sockfd, buff, sizeof(buff)); 
-        // print buffer which contains the client contents 
-        printf("Received message: %s\t : ", buff); 
-    }    
-        
+       
 }
 
 void connectToServer(struct sockaddr_in servaddr) {
@@ -47,6 +36,8 @@ void connectToServer(struct sockaddr_in servaddr) {
     else
         printf("connected to the server..\n"); 
   
+    printf("sockfd = %d", sockfd);
+    
     // function for chat 
     toServer(sockfd); 
   
@@ -55,9 +46,9 @@ void connectToServer(struct sockaddr_in servaddr) {
     //close(sockfd); 
 }
 
-void main() {
+int main() {
 
-    int number_of_outside_servers = 2;
+    int number_of_outside_servers = 1;
     struct sockaddr_in *servaddr_array = calloc(number_of_outside_servers,
                                                 sizeof(servaddr_array[0]));
 
@@ -67,9 +58,11 @@ void main() {
     servaddr_array[0].sin_addr.s_addr = inet_addr("127.0.0.1"); 
     servaddr_array[0].sin_port = htons(PORT);
 
+    /*
     servaddr_array[1].sin_family = AF_INET; 
     servaddr_array[1].sin_addr.s_addr = inet_addr("127.0.0.1"); 
     servaddr_array[1].sin_port = htons(PORT);
+    */
 
     //************************************************************************
 

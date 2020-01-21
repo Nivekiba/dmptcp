@@ -15,10 +15,10 @@ void initialize(struct Cluster *cluster, struct sockaddr_in master_ip, struct so
 }
 
 // Getting values from the structure
-sockaddr_in getMasterIP(struct Cluster *cluster) {
+struct sockaddr_in getMasterIP(struct Cluster *cluster) {
     return cluster->master_ip;
 }
 
-sockaddr_in* getNodesIP(struct Cluster *cluster) {
+struct sockaddr_in* getNodesIP(struct Cluster *cluster) {
     return cluster->nodes_ip;
 }

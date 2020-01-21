@@ -36,7 +36,7 @@ void writeMessage(struct Message* message,
 }
 
 // Functions for getting isolate elements of a message
-MessageType getType(struct Message* message) {
+enum MessageType getType(struct Message* message) {
     return message->type;
 }
 

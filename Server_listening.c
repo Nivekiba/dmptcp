@@ -9,9 +9,9 @@
 #include "datastructures/Message.h"
 
 // Constants
-#define PORT 2000
+#define PORT 3000
 #define SA struct sockaddr
-#define MAX_NUMBER_CONNECTION 50
+#define MAX_NUMBER_CONNECTION 5
 
 // Global variables
 struct Cluster cluster;
@@ -19,9 +19,7 @@ struct Cluster cluster;
 
 // Process clients' requests
 void toClient(int sockfd) {
-    char buff[] = "Bonjour"; 
-    int n; 
-    write(sockfd, buff, sizeof(buff));
+   
 }
 
 
@@ -55,7 +53,7 @@ void initiateConn() {
         printf("Socket successfully binded..\n"); 
   
     // Now server is ready to listen and verification 
-    if ((listen(sockfd, 5)) != 0) { 
+    if ((listen(sockfd, MAX_NUMBER_CONNECTION)) != 0) { 
         printf("Listen failed...\n"); 
         exit(0); 
     } 
@@ -64,16 +62,18 @@ void initiateConn() {
     len = sizeof(cli); 
   
     // Accept the data packet from client and verification 
-    connfd = accept(sockfd, (SA*)&cli, &len); 
-    if (connfd < 0) { 
-        printf("server acccept failed...\n"); 
-        exit(0); 
-    } 
-    else
-        printf("server acccept the client...\n"); 
-
-    // process client requests here
-    toClient(sockfd);
+    while(1) {
+        connfd = accept(sockfd, (SA*)&cli, &len); 
+        if (connfd < 0) { 
+            printf("server acccept failed...\n"); 
+            exit(0); 
+        } 
+        else
+            printf("server acccept the client...\n");
+        // process client requests here
+        toClient(sockfd);     
+    }
+    
 
     //RELEASE Function called
     //close(sockfd); 
@@ -83,7 +83,7 @@ void initiateConn() {
 
 
 
-void main()
+int main()
 {
     initiateConn();
 }
