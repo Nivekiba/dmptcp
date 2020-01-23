@@ -17,6 +17,7 @@ void dmptcp_proto_parse_pkt2(struct Message *msg, unsigned char *buf){
 }
 
 void dmptcp_proto_create_pkt2(struct Message *msg, unsigned char *buf){
+
     memcpy(buf, msg, sizeof(struct Message));
 }
 

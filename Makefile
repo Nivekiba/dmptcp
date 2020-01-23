@@ -12,3 +12,7 @@ install:
 
 remove:
 	rmmod LKM
+
+exes:
+	gcc -o server.o Server_listening.c
+	gcc -o client.o Client_connect.c
