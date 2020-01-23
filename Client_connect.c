@@ -8,24 +8,95 @@
 #include <arpa/inet.h>
 #include "datastructures/Cluster.h"
 #include "datastructures/Message.h"
+#include "dmptcp_proto.h"
 
 
 #define PORT 3000
 #define SA struct sockaddr
+#define MAX_BUFFER_LENGTH 1024
 
 
-// Global variables
-int token = 0;
+//===========================================================================================
+//=========================== Function prototypes ===========================================
 
-// Function prototypes
+void sendCONNPacket(int sockfd, struct Message *message, int *token);
+void sendDATAPacket(int sockfd, struct Message *message);
+void sendREALESEPacket(int sockfd);
+void toServer(int sockfd, int *token);
+void connectToServer(struct sockaddr_in servaddr, int token, struct Message *message);
 int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers);
 
-void toServer(int sockfd, int *token) {
-    send(sockfd , token , sizeof(int) , 0 ); 
-    printf("Message sent to the server");
+
+
+// ==========================================================================================
+// =========================== MAIN FUNCTION ================================================
+
+int main() {
+
+    int number_of_outside_servers = 1;
+    struct sockaddr_in *servaddr_array = calloc(number_of_outside_servers,
+                                                sizeof(servaddr_array[0]));
+    int token = 0;                                            
+    struct Message message;
+    writeMessage(&message, CONN, PORT, NULL);
+
+    // assign IP, PORT  
+    servaddr_array[0].sin_family = AF_INET; 
+    servaddr_array[0].sin_addr.s_addr = inet_addr("127.0.0.1"); 
+    servaddr_array[0].sin_port = htons(PORT);
+
+    
+    /*servaddr_array[1].sin_family = AF_INET; 
+    servaddr_array[1].sin_addr.s_addr = inet_addr("127.0.0.1"); 
+    servaddr_array[1].sin_port = htons(PORT);*/
+
+    // Generate token 
+    token = generateToken(servaddr_array, number_of_outside_servers);
+
+    int i = 0;
+
+    for (i = 0; i < number_of_outside_servers; i++)
+    {
+        connectToServer(servaddr_array[i], &token, &message);
+    }
+    printf("token = %d", generateToken(servaddr_array, number_of_outside_servers));
+
 }
 
-void connectToServer(struct sockaddr_in servaddr) {
+
+
+//============================================================================================
+//========================== FUNCTIONS FOR SENDING PACKETS ===================================   
+
+void sendCONNPacket(int sockfd, struct Message *message, int *token) {
+
+    char buff[MAX_BUFFER_LENGTH] = {0};
+    // Firstly, we set token to data field of message (we need to convert token to a string)
+    sprintf(message->data, "%d", *token);
+
+    // Next, we transform message into byte stream via dmptcp_proto
+    dmptcp_proto_create_pkt2(message, buff);
+
+    // Then send the transformed message to the server
+    send(sockfd, buff, sizeof(buff), 0);
+
+}
+
+void sendDATAPacket(int sockfd, struct Message *message) {
+
+}
+
+void sendREALESEPacket(int sockfd) {
+    close(sockfd);
+}
+
+
+
+//=============================================================================================
+//=========================  AUXILIARY FUNCTIONS ==============================================
+
+
+void connectToServer(struct sockaddr_in servaddr, int token, struct Message *message) {
     int sockfd, connfd;  
   
     // socket create and varification 
@@ -47,12 +118,15 @@ void connectToServer(struct sockaddr_in servaddr) {
   
     printf("sockfd = %d", sockfd);
     
-    // function for communication
-    toServer(sockfd, &token); 
-  
-    // close the socket 
-    // RELEASE Function called
-    //close(sockfd); 
+    // Functions for communication
+
+    if(message->type == CONN)
+        sendCONNPacket(sockfd, message, token);
+    else if(message->type == DATA)
+        sendDATAPacket(sockfd, message);
+    else if(message->type == RELEASE)
+        sendREALESEPacket(sockfd);
+ 
 }
 
 int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers) {
@@ -65,35 +139,3 @@ int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_s
     return token_;
 }
 
-int main() {
-
-    int number_of_outside_servers = 1;
-    struct sockaddr_in *servaddr_array = calloc(number_of_outside_servers,
-                                                sizeof(servaddr_array[0]));
-
-    //************************************************************************
-    // assign IP, PORT  
-    servaddr_array[0].sin_family = AF_INET; 
-    servaddr_array[0].sin_addr.s_addr = inet_addr("127.0.0.1"); 
-    servaddr_array[0].sin_port = htons(PORT);
-
-    
-    /*servaddr_array[1].sin_family = AF_INET; 
-    servaddr_array[1].sin_addr.s_addr = inet_addr("127.0.0.1"); 
-    servaddr_array[1].sin_port = htons(PORT);*/
-    
-
-    //************************************************************************
-
-    // Generate token 
-    token = generateToken(servaddr_array, number_of_outside_servers);
-
-    int i = 0;
-
-    for (i = 0; i < number_of_outside_servers; i++)
-    {
-        connectToServer(servaddr_array[i]);
-    }
-    printf("token = %d", generateToken(servaddr_array, number_of_outside_servers));
-
-}

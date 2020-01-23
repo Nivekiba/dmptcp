@@ -3,22 +3,15 @@
 #include <netinet/in.h>
 
 struct Cluster {
-    struct sockaddr_in master_ip;
-    struct sockaddr_in out;
     struct sockaddr_in* nodes_ip; 
 };
 
-// Setting a values to a cluster
-void initialize(struct Cluster *cluster, struct sockaddr_in master_ip, struct sockaddr_in *nodes_ip) {
-    cluster->master_ip = master_ip;
-    cluster->nodes_ip = nodes_ip;
-}
-
-// Getting values from the structure
-struct sockaddr_in getMasterIP(struct Cluster *cluster) {
-    return cluster->master_ip;
-}
-
-struct sockaddr_in* getNodesIP(struct Cluster *cluster) {
-    return cluster->nodes_ip;
+struct Cluster* createCluster(struct sockaddr_in *nodes, int number_of_nodes) {
+    int i = 0;
+    struct Cluster *cluster;
+    for ( i = 0; i < number_of_nodes; i++)
+    {
+        cluster->nodes_ip[i] = nodes[i];
+    }
+    return cluster;
 }
