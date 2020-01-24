@@ -14,5 +14,5 @@ remove:
 	rmmod LKM
 
 exes:
-	gcc -o server.o Server_listening.c
-	gcc -o client.o Client_connect.c
+	gcc -o server.o -g Server_listening.c
+	gcc -o client.o -g Client_connect.c

@@ -24,8 +24,8 @@ struct Message
     enum MessageType type;
     unsigned short int port;
     unsigned int num;
-    char *data;
-    char *signature;
+    char data[100];
+    char signature[10];
 };
 
 //=======================================================================
@@ -39,8 +39,9 @@ struct Message* createMessage(
     struct Message *message = (struct Message *)malloc(sizeof(struct Message));
     message->type = messageType;
     message->port = port;
-    message->data = data;
-    message->signature = NULL;
+    if(data != NULL) strcpy(data, message->data);
+    char* sig = "124\0";
+    //strcpy(sig, message->signature);
 
     return message;
 }
