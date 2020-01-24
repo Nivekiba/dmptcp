@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <netinet/in.h>
 
+#define _CLUSTER_H_
+
 struct Cluster {
     struct sockaddr_in* nodes_ip; 
 };

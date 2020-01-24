@@ -8,9 +8,13 @@
 #include <string.h> 
 #include <sys/socket.h>
 #include <sys/types.h> 
-#include "datastructures/Cluster.h"
-#include "datastructures/Message.h"
 
+#ifndef _CLUSTER_H_
+#include "datastructures/Cluster.h"
+#endif
+#ifndef _MESSAGE_H_
+#include "datastructures/Message.h"
+#endif
 
 void dmptcp_proto_parse_pkt2(struct Message *msg, unsigned char *buf){
     memcpy(msg, buf, sizeof(struct Message));

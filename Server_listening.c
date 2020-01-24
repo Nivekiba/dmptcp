@@ -1,16 +1,18 @@
 #include <stdio.h> 
 #include <netdb.h> 
 #include <netinet/in.h> 
+#include <unistd.h>
 #include <stdlib.h> 
 #include <string.h> 
 #include <sys/socket.h> 
 #include <sys/types.h> 
+#include <arpa/inet.h>
 #include "datastructures/Cluster.h"
 #include "datastructures/Message.h"
 #include "dmptcp_proto.h"
 
 // Constants
-#define PORT 3000
+#define PORT 13000
 #define SA struct sockaddr
 #define MAX_NUMBER_CONNECTION 200
 #define MAX_BUFFER_LENGTH 1024
@@ -19,7 +21,7 @@
 struct Cluster cluster;
 int token = 0;
 int number_connections_received = 0; // This is used to control how many clients connected over the time
-
+int local_server_sock = -1;
 
 //=============================================================================================
 //=========================== FUNCTION PROTOTYPES =============================================
@@ -37,22 +39,61 @@ int main()
     initiateConn();
 }
 
+//=============================================================================================
+//======================= CREATION OF LOCAL SERVER FOR THE DESTINATION PROTOCOL ===============
+
+void connect_local_server(struct Message* msg){
+    // socket create and varification 
+    local_server_sock = socket(AF_INET, SOCK_STREAM, 0); 
+    if (local_server_sock == -1) { 
+        printf("socket local creation failed...\n"); 
+        exit(0); 
+    } 
+    else
+        printf("Socket local successfully created..\n");  
+    
+    // assign IP, PORT  
+    struct sockaddr_in servaddr ;
+    servaddr.sin_family = AF_INET; 
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
+    servaddr.sin_port = htons(msg->port);
+
+    // connect the client socket to server socket 
+    if (connect(local_server_sock, (SA*)&servaddr, sizeof(servaddr)) != 0) { 
+        perror("Conection to local server failed");
+        printf("connection with the local server failed on port %d...\n", msg->port); 
+        exit(0); 
+    } 
+    else
+        printf("connected to the local server..\n"); 
+}
 
 //=============================================================================================
 //==================== FUNCTIONS TO PROCESS CLIENT REQUESTS ===================================
 
-void CONNRequests(int connfd) {
+void requests(int connfd) {
 
     char buffer[MAX_BUFFER_LENGTH] = {0};
     struct Message *message;
     message = malloc(sizeof(struct Message));
     int received_token = 0;
+    printf("buff before: %s", buffer);
+    printf("Waiting for messages on socket n: %d ...\n", connfd);
+    if(recv(connfd, buffer, MAX_BUFFER_LENGTH, 0) < 0){
+        printf("error while receiving data\n");
+        exit(0);
+    } else {
+        printf("we receive data\n");
+    }
+    printf("buff after: %s", buffer);
 
     // We copy the content of the message in message variable
     dmptcp_proto_parse_pkt2(message, buffer);
 
+    // CONN requests
     if(message->type == CONN) {
 
+        connect_local_server(message);
         received_token = atoi(message->data);
         
         // if no client yet connected
@@ -74,35 +115,16 @@ void CONNRequests(int connfd) {
         {
             printf("Token == %d \t Received Token == %d", token, received_token);
             close(connfd);
-            number_connections_received ++;
         }
-
-    }
-    
-}
-
-void DATARequests(int connfd) {
-    char buffer[MAX_BUFFER_LENGTH] = {0};
-    struct Message *message;
-    message = malloc(sizeof(struct Message));
-
-     // We copy the content of the message in message variable
-    dmptcp_proto_parse_pkt2(message, buffer);
-    if(message->type == DATA) {
-
+        
     }
 
-}
-
-void RELEASERequests(int connfd) {
-    char buffer[MAX_BUFFER_LENGTH] = {0};
-    struct Message *message;
-    message = malloc(sizeof(struct Message));
-
-     // We copy the content of the message in message variable
-    dmptcp_proto_parse_pkt2(message, buffer);
+    // RELEASE requests
     if(message->type == RELEASE) {
         close(connfd);
+        number_connections_received --;
+        if(number_connections_received == 0)
+            close(local_server_sock);
     }
     
 }
@@ -167,9 +189,7 @@ void initiateConn() {
             printf("server acccept the client...\n");
 
         // Process client requests here
-        CONNRequests(connfd);
-        DATARequests(connfd);
-        RELEASERequests(connfd);
+        requests(connfd);
         //toClient(connfd);     
     }
        

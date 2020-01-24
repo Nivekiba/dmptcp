@@ -2,6 +2,7 @@
 #include <netdb.h> 
 #include <netinet/in.h> 
 #include <stdlib.h> 
+#include <unistd.h>
 #include <string.h> 
 #include <sys/socket.h> 
 #include <sys/types.h>
@@ -11,7 +12,7 @@
 #include "dmptcp_proto.h"
 
 
-#define PORT 3000
+#define PORT 13000
 #define SA struct sockaddr
 #define MAX_BUFFER_LENGTH 1024
 
@@ -23,7 +24,7 @@ void sendCONNPacket(int sockfd, struct Message *message, int *token);
 void sendDATAPacket(int sockfd, struct Message *message);
 void sendREALESEPacket(int sockfd);
 void toServer(int sockfd, int *token);
-void connectToServer(struct sockaddr_in servaddr, int token, struct Message *message);
+void connectToServer(struct sockaddr_in servaddr, int *token, struct Message *message);
 int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers);
 
 
@@ -37,8 +38,7 @@ int main() {
     struct sockaddr_in *servaddr_array = calloc(number_of_outside_servers,
                                                 sizeof(servaddr_array[0]));
     int token = 0;                                            
-    struct Message message;
-    writeMessage(&message, CONN, PORT, NULL);
+    struct Message* message = createMessage(CONN, 3306, NULL);
 
     // assign IP, PORT  
     servaddr_array[0].sin_family = AF_INET; 
@@ -57,7 +57,7 @@ int main() {
 
     for (i = 0; i < number_of_outside_servers; i++)
     {
-        connectToServer(servaddr_array[i], &token, &message);
+        connectToServer(servaddr_array[i], &token, message);
     }
     printf("token = %d", generateToken(servaddr_array, number_of_outside_servers));
 
@@ -76,6 +76,7 @@ void sendCONNPacket(int sockfd, struct Message *message, int *token) {
 
     // Next, we transform message into byte stream via dmptcp_proto
     dmptcp_proto_create_pkt2(message, buff);
+    printf("message type: %d", message->type);
 
     // Then send the transformed message to the server
     send(sockfd, buff, sizeof(buff), 0);
@@ -96,7 +97,7 @@ void sendREALESEPacket(int sockfd) {
 //=========================  AUXILIARY FUNCTIONS ==============================================
 
 
-void connectToServer(struct sockaddr_in servaddr, int token, struct Message *message) {
+void connectToServer(struct sockaddr_in servaddr, int *token, struct Message *message) {
     int sockfd, connfd;  
   
     // socket create and varification 
