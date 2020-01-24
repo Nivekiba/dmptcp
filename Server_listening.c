@@ -94,6 +94,7 @@ void requests(int connfd) {
     if(message->type == CONN) {
 
         connect_local_server(message);
+        printf("the received data: %s", message->data);
         received_token = atoi(message->data);
         
         // if no client yet connected

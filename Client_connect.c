@@ -20,11 +20,11 @@
 //===========================================================================================
 //=========================== Function prototypes ===========================================
 
-void sendCONNPacket(int sockfd, struct Message *message, int *token);
+void sendCONNPacket(int sockfd, struct Message *message, int token);
 void sendDATAPacket(int sockfd, struct Message *message);
 void sendREALESEPacket(int sockfd);
 void toServer(int sockfd, int *token);
-void connectToServer(struct sockaddr_in servaddr, int *token, struct Message *message);
+void connectToServer(struct sockaddr_in servaddr, int token, struct Message *message);
 int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers);
 
 
@@ -57,7 +57,7 @@ int main() {
 
     for (i = 0; i < number_of_outside_servers; i++)
     {
-        connectToServer(servaddr_array[i], &token, message);
+        connectToServer(servaddr_array[i], token, message);
     }
     printf("token = %d", generateToken(servaddr_array, number_of_outside_servers));
 
@@ -68,15 +68,15 @@ int main() {
 //============================================================================================
 //========================== FUNCTIONS FOR SENDING PACKETS ===================================   
 
-void sendCONNPacket(int sockfd, struct Message *message, int *token) {
+void sendCONNPacket(int sockfd, struct Message *message, int token) {
 
-    char buff[MAX_BUFFER_LENGTH] = {0};
+    char *buff = malloc(MAX_BUFFER_LENGTH);
     // Firstly, we set token to data field of message (we need to convert token to a string)
-    sprintf(message->data, "%d", *token);
+    sprintf(message->data, "%d", token);
 
     // Next, we transform message into byte stream via dmptcp_proto
     dmptcp_proto_create_pkt2(message, buff);
-    printf("message type: %d", message->type);
+    printf("Buffer message to send: %s", buff);
 
     // Then send the transformed message to the server
     send(sockfd, buff, sizeof(buff), 0);
@@ -97,7 +97,7 @@ void sendREALESEPacket(int sockfd) {
 //=========================  AUXILIARY FUNCTIONS ==============================================
 
 
-void connectToServer(struct sockaddr_in servaddr, int *token, struct Message *message) {
+void connectToServer(struct sockaddr_in servaddr, int token, struct Message *message) {
     int sockfd, connfd;  
   
     // socket create and varification 
@@ -108,7 +108,7 @@ void connectToServer(struct sockaddr_in servaddr, int *token, struct Message *me
     } 
     else
         printf("Socket successfully created..\n");  
-  
+
     // connect the client socket to server socket 
     if (connect(sockfd, (SA*)&servaddr, sizeof(servaddr)) != 0) { 
         printf("connection with the server failed...\n"); 
