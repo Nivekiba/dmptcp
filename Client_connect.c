@@ -12,7 +12,7 @@
 #include "dmptcp_proto.h"
 
 
-#define PORT 13000
+#define PORT 13001
 #define SA struct sockaddr
 #define MAX_BUFFER_LENGTH 1024
 

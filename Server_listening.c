@@ -12,7 +12,7 @@
 #include "dmptcp_proto.h"
 
 // Constants
-#define PORT 13000
+#define PORT 13001
 #define SA struct sockaddr
 #define MAX_NUMBER_CONNECTION 200
 #define MAX_BUFFER_LENGTH 10240
@@ -192,21 +192,21 @@ void initiateConn() {
         else
             printf("server accept the client...\n");
 
-        pid_t child_pid = fork();
-        if(child_pid < 0){
-            perror("Fork error");
-        }
-        if(child_pid == 0){
+        // pid_t child_pid = fork();
+        // if(child_pid < 0){
+        //     perror("Fork error");
+        // }
+        // if(child_pid == 0){
             // Process client requests here
             requests(connfd);
             printf("Closed client");
-        }
-        else{
-            pid_t attended_pid = waitpid(child_pid, NULL, 0);
-            if(attended_pid != child_pid){
-                printf("Child error");
-            }
-        }
+        // }
+        // else{
+        //     pid_t attended_pid = waitpid(child_pid, NULL, 0);
+        //     if(attended_pid != child_pid){
+        //         printf("Child error");
+        //     }
+        // }
     }
        
 }
