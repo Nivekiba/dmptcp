@@ -38,7 +38,7 @@ int main() {
     struct sockaddr_in *servaddr_array = calloc(number_of_outside_servers,
                                                 sizeof(servaddr_array[0]));
     int token = 0;                                            
-    struct Message* message = createMessage(CONN, 3306, NULL);
+    struct Message* message = createMessage(CONN, PORT, NULL);
 
     // assign IP, PORT  
     servaddr_array[0].sin_family = AF_INET; 

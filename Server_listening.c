@@ -1,3 +1,5 @@
+#define _MESSAGE_H_
+
 #include <stdio.h> 
 #include <netdb.h> 
 #include <netinet/in.h> 
@@ -26,9 +28,7 @@ int local_server_sock = -1;
 //=============================================================================================
 //=========================== FUNCTION PROTOTYPES =============================================
 
-void CONNRequests(int connfd);
-void DATARequests(int connfd);
-void RELEASERequests(int connfd);
+void requests(int connfd);
 void initiateConn();
 
 //=============================================================================================
