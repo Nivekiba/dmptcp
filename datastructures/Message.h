@@ -11,9 +11,9 @@
 */
 enum MessageType
 {
-    CONN = 0,
-    DATA = 1,
-    RELEASE = 2
+    CONN = 1,
+    DATA = 2,
+    RELEASE = 3
 };
 
 //========================================================================
@@ -22,10 +22,10 @@ enum MessageType
 struct Message
 {
     enum MessageType type;
+    char data[32];
     unsigned short int port;
     unsigned int num;
-    char data[100];
-    char signature[10];
+    //char signature[10];
 };
 
 //=======================================================================
@@ -34,14 +34,14 @@ struct Message
 struct Message* createMessage(
                   enum MessageType messageType,
                   unsigned short int port,
+                  unsigned int num,
                   char *data)
 {
     struct Message *message = (struct Message *)malloc(sizeof(struct Message));
     message->type = messageType;
     message->port = port;
-    if(data != NULL) strcpy(data, message->data);
-    char* sig = "124\0";
-    //strcpy(sig, message->signature);
+    message->num = num;
+    if(data != NULL) sprintf(message->data, "%s", data);
 
     return message;
 }

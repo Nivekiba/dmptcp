@@ -22,7 +22,7 @@
 
 void sendCONNPacket(int sockfd, struct Message *message, int token);
 void sendDATAPacket(int sockfd, struct Message *message);
-void sendREALESEPacket(int sockfd);
+void sendRELEASEPacket(int sockfd);
 void toServer(int sockfd, int *token);
 void connectToServer(struct sockaddr_in servaddr, int token, struct Message *message);
 int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers);
@@ -38,7 +38,7 @@ int main() {
     struct sockaddr_in *servaddr_array = calloc(number_of_outside_servers,
                                                 sizeof(servaddr_array[0]));
     int token = 0;                                            
-    struct Message* message = createMessage(CONN, 3306, NULL);
+    struct Message* message = createMessage(CONN, 3306, 100, NULL);
 
     // assign IP, PORT  
     servaddr_array[0].sin_family = AF_INET; 
@@ -76,18 +76,31 @@ void sendCONNPacket(int sockfd, struct Message *message, int token) {
 
     // Next, we transform message into byte stream via dmptcp_proto
     dmptcp_proto_create_pkt2(message, buff);
-    printf("Buffer message to send: %s", buff);
+
+    //debug packet transformation
+    dmptcp_proto_parse_pkt2(message, buff);
+    dmptcp_debug_pkt(message);
 
     // Then send the transformed message to the server
-    send(sockfd, buff, sizeof(buff), 0);
+    send(sockfd, buff, sizeof(struct Message), 0);
 
 }
 
 void sendDATAPacket(int sockfd, struct Message *message) {
+    char *buff = malloc(MAX_BUFFER_LENGTH);
 
+    dmptcp_proto_create_pkt2(message, buff);
+
+    send(sockfd, buff, sizeof(struct Message), 0);
 }
 
-void sendREALESEPacket(int sockfd) {
+void sendRELEASEPacket(int sockfd) {
+    struct Message* msg = createMessage(RELEASE, NULL, NULL, NULL);
+    char *buff = malloc(MAX_BUFFER_LENGTH);
+
+    dmptcp_proto_create_pkt2(msg, buff);
+
+    send(sockfd, buff, sizeof(struct Message), 0);
     close(sockfd);
 }
 
@@ -126,8 +139,12 @@ void connectToServer(struct sockaddr_in servaddr, int token, struct Message *mes
     else if(message->type == DATA)
         sendDATAPacket(sockfd, message);
     else if(message->type == RELEASE)
-        sendREALESEPacket(sockfd);
- 
+        sendRELEASEPacket(sockfd);
+    char* b = "Le caliptus\0";
+    message = createMessage(DATA, 3306, 0, b);
+    sendDATAPacket(sockfd, message);
+
+    sendRELEASEPacket(sockfd);
 }
 
 int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers) {
