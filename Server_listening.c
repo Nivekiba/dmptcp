@@ -17,10 +17,9 @@
 #define PORT 13000
 #define SA struct sockaddr
 #define MAX_NUMBER_CONNECTION 200
-#define MAX_BUFFER_LENGTH 1024
+#define MAX_BUFFER_LENGTH 4096
 
 // Global variables
-struct Cluster cluster;
 int token = 0;
 int number_connections_received = 0; // This is used to control how many clients connected over the time
 int local_server_sock = -1;
@@ -73,7 +72,7 @@ void connect_local_server(struct Message* msg){
 
 void requests(int connfd) {
 
-    char buffer[MAX_BUFFER_LENGTH] = {0};
+    char buffer[MAX_BUFFER_LENGTH];
     struct Message *message;
     message = malloc(sizeof(struct Message));
     int received_token = 0;
@@ -89,7 +88,7 @@ void requests(int connfd) {
 
     // We copy the content of the message in message variable
     dmptcp_proto_parse_pkt2(message, buffer);
-
+    printf("MESSAGE DATA == %s ", message->data);
     // CONN requests
     if(message->type == CONN) {
 
