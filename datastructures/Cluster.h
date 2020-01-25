@@ -6,6 +6,7 @@
 
 struct Cluster {
     int nb_of_nodes;
+    int *sockfds;
     struct sockaddr_in* nodes_ip; 
 };
 

@@ -14,10 +14,10 @@
 #include "dmptcp_proto.h"
 
 // Constants
-#define PORT 13000
+#define PORT 13001
 #define SA struct sockaddr
 #define MAX_NUMBER_CONNECTION 200
-#define MAX_BUFFER_LENGTH 4096
+#define MAX_BUFFER_LENGTH 10240
 
 // Global variables
 int token = 0;
@@ -64,31 +64,30 @@ void connect_local_server(struct Message* msg){
         exit(0); 
     } 
     else
-        printf("connected to the local server..\n"); 
+        printf("connected to the local server on port %d\n", msg->port); 
 }
 
 //=============================================================================================
 //==================== FUNCTIONS TO PROCESS CLIENT REQUESTS ===================================
 
 void requests(int connfd) {
-
-    char buffer[MAX_BUFFER_LENGTH];
+    char *buffer = malloc(MAX_BUFFER_LENGTH);
     struct Message *message;
     message = malloc(sizeof(struct Message));
     int received_token = 0;
-    printf("buff before: %s", buffer);
-    printf("Waiting for messages on socket n: %d ...\n", connfd);
-    if(recv(connfd, buffer, MAX_BUFFER_LENGTH, 0) < 0){
+    ssize_t len_recv;
+message_br:
+    printf("\nWaiting for messages on socket n: %d ...\n", connfd);
+    while( (len_recv = recv(connfd, (struct Message*)message, sizeof(struct Message), MSG_WAITALL)) == 0 );
+    buffer[len_recv] = '\0';
+    if(len_recv < 0){
         printf("error while receiving data\n");
         exit(0);
-    } else {
-        printf("we receive data\n");
     }
-    printf("buff after: %s", buffer);
-
     // We copy the content of the message in message variable
-    dmptcp_proto_parse_pkt2(message, buffer);
-    printf("MESSAGE DATA == %s ", message->data);
+    // dmptcp_proto_parse_pkt2(message, buffer);
+    dmptcp_debug_pkt(message);
+
     // CONN requests
     if(message->type == CONN) {
 
@@ -119,13 +118,19 @@ void requests(int connfd) {
         
     }
 
+    // DATA requests
+    if(message->type == DATA){
+        printf("Dar good message: %s\n", message->data);
+    }
+
     // RELEASE requests
     if(message->type == RELEASE) {
         close(connfd);
         number_connections_received --;
         if(number_connections_received == 0)
             close(local_server_sock);
-    }
+    } else
+        goto message_br;
     
 }
 
@@ -182,15 +187,27 @@ void initiateConn() {
     while(1) {
         connfd = accept(sockfd, (SA*)&cli, &len); 
         if (connfd < 0) { 
-            printf("server acccept failed...\n"); 
+            printf("server accept failed...\n"); 
             exit(0); 
         } 
         else
-            printf("server acccept the client...\n");
+            printf("server accept the client...\n");
 
-        // Process client requests here
-        requests(connfd);
-        //toClient(connfd);     
+        // pid_t child_pid = fork();
+        // if(child_pid < 0){
+        //     perror("Fork error");
+        // }
+        // if(child_pid == 0){
+            // Process client requests here
+            requests(connfd);
+            printf("Closed client");
+        // }
+        // else{
+        //     pid_t attended_pid = waitpid(child_pid, NULL, 0);
+        //     if(attended_pid != child_pid){
+        //         printf("Child error");
+        //     }
+        // }
     }
        
 }

@@ -25,4 +25,11 @@ void dmptcp_proto_create_pkt2(struct Message *msg, unsigned char *buf){
     memcpy(buf, msg, sizeof(struct Message));
 }
 
+void dmptcp_debug_pkt(struct Message *msg){
+    printf("type: %d\n", msg->type);
+    printf("port: %d\n", msg->port);
+    printf("num: %d\n", msg->num);
+    printf("data: %s\n", msg->data);
+}
+
 #endif

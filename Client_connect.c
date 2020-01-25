@@ -14,7 +14,7 @@
 
 // Constants
 
-#define PORT 13000
+#define PORT 13001
 #define SA struct sockaddr
 #define MAX_BUFFER_LENGTH 1024 
 #define STANDARD_MESSAGE_BLOCK_SIZE 128
@@ -27,10 +27,10 @@ struct Cluster *cluster;
 //=========================== Function prototypes ===========================================
 
 void sendCONNPacket(int sockfd, struct Message *message, int token);
-void sendDATAPacket(int sockfd, struct Message *message, struct Cluster *cluster_);
-void sendREALESEPacket(int sockfd);
+void sendDATAPacket(struct Cluster *cluster_, struct Message *message);
+void sendRELEASEPacket(int sockfd);
 void toServer(int sockfd, int *token);
-int connectToServer(struct sockaddr_in *server_addr, int token, struct Message *message);
+int connectToServer(struct sockaddr_in server_addr, int token, struct Message *message);
 int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers);
 
 
@@ -44,7 +44,7 @@ int main() {
     struct sockaddr_in *servaddr_array = calloc(number_of_outside_servers,
                                                 sizeof(servaddr_array[0]));
     int token = 0;                                            
-    struct Message* message = createMessage(CONN, PORT, NULL);
+    struct Message* message = createMessage(CONN, 3306, 100, NULL);
 
     // assign IP, PORT  
     servaddr_array[0].sin_family = AF_INET; 
@@ -67,8 +67,10 @@ int main() {
     }
     printf("token = %d", generateToken(servaddr_array, number_of_outside_servers));
 
-    // Function calls for sending messages
+    // Function calls for sending DATA messages
     
+    if(message->type == DATA)
+        sendDATAPacket(cluster, message);
 
 }
 
@@ -85,14 +87,17 @@ void sendCONNPacket(int sockfd, struct Message* message, int token) {
 
     // Next, we transform message into byte stream via dmptcp_proto
     dmptcp_proto_create_pkt2(message, buff);
-    printf("Buffer message to send: %s", buff);
+
+    //debug packet transformation
+    dmptcp_proto_parse_pkt2(message, buff);
+    dmptcp_debug_pkt(message);
 
     // Then send the transformed message to the server
-    send(sockfd, buff, sizeof(buff), 0);
+    send(sockfd, buff, sizeof(struct Message), 0);
 
 }
 
-void sendDATAPacket(int sockfd, struct Message *message, struct Cluster *cluster_) {
+void sendDATAPacket(struct Cluster *cluster_, struct Message *message) {
 
     
     // First, getting the size of data field of the structure message
@@ -100,7 +105,7 @@ void sendDATAPacket(int sockfd, struct Message *message, struct Cluster *cluster
 
     // Then, we form message blocks and send it to servers
     // We count the number of blocks, we do this while the obtained number is greater than the number of servers in the cluster
-    int number_of_blocks = 0;
+    int number_of_blocks = 1;
     int current_message_block_size = STANDARD_MESSAGE_BLOCK_SIZE;
     do
     {
@@ -112,6 +117,9 @@ void sendDATAPacket(int sockfd, struct Message *message, struct Cluster *cluster
         
     }while(number_of_blocks > cluster->nb_of_nodes); // Here, we are sure that number_of_blocks <= number of servers in a cluster
     
+    if(number_of_blocks == 0)
+        number_of_blocks = 1;
+
     char buff[current_message_block_size];
     struct Message message_blocks[number_of_blocks];
     int i = 0;
@@ -124,24 +132,48 @@ void sendDATAPacket(int sockfd, struct Message *message, struct Cluster *cluster
         //message_blocks[i].signature = message->signature; 
 
         dmptcp_proto_create_pkt2(&message_blocks[i], buff);
-        send(sockfd, buff, sizeof(buff), 0);
+        send(cluster->sockfds[i], buff, sizeof(struct Message), 0);
         
     }
 
-
 }
 
-void sendREALESEPacket(int sockfd) {
+void sendRELEASEPacket(int sockfd) {
+    struct Message* msg = createMessage(RELEASE, NULL, NULL, NULL);
+    char *buff = malloc(MAX_BUFFER_LENGTH);
+
+    dmptcp_proto_create_pkt2(msg, buff);
+
+    send(sockfd, buff, sizeof(struct Message), 0);
     close(sockfd);
 }
 
 
+//=============================================================================================
+//========================= FUNCTION FOR RECEIVING DATA =======================================
+
+struct Message* recvDATAPacket(struct Cluster *cluster_)
+{
+    // First, create a liste of received message blocks
+    struct Message *received_messages = (struct Message *) malloc(
+                                        cluster->nb_of_nodes * sizeof(struct Message));
+
+    struct Message *tmp = (struct Message *) malloc(sizeof(struct Message));                                   
+
+    int i;
+    for(i = 0; i < cluster->nb_of_nodes; i++)
+    {
+        recv(cluster->sockfds[i], tmp, sizeof(struct Message), 0);
+        received_messages[tmp->num] = *tmp; 
+    }
+    
+}
 
 //=============================================================================================
 //=========================  AUXILIARY FUNCTIONS ==============================================
 
 
-int connectToServer(struct sockaddr_in *server_addr, int token, struct Message *message) {
+int connectToServer(struct sockaddr_in server_addr, int token, struct Message *message) {
     int sockfd;  
     int i = 0;
     
@@ -162,10 +194,13 @@ int connectToServer(struct sockaddr_in *server_addr, int token, struct Message *
     else
         printf("connected to the server..\n"); 
     
-    printf("sockfd = %d", sockfd);
 
-    return sockfd;
- 
+    // Functions for communication
+
+    if(message->type == CONN)
+        sendCONNPacket(sockfd, message, token);
+    else if(message->type == RELEASE)
+        sendRELEASEPacket(sockfd);
 }
 
 int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers) {
