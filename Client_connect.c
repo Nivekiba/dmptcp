@@ -6,6 +6,7 @@
 #include <string.h> 
 #include <sys/socket.h> 
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <arpa/inet.h>
 #include <string.h>
 #include <time.h>
@@ -16,10 +17,10 @@
 
 // Constants
 
-#define PORT 13001
+#define PORT 13100
 #define SA struct sockaddr
 #define MAX_BUFFER_LENGTH 1024 
-#define STANDARD_MESSAGE_BLOCK_SIZE 128
+#define STANDARD_MESSAGE_BLOCK_SIZE 10
 
 // Global variables
 
@@ -41,6 +42,7 @@ void toServer(int sockfd, int *token);
 int connectToServer(struct sockaddr_in server_addr, int token, struct Message *message, int index_serv);
 int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers);
 
+struct Message* recvDATAPacket(struct Cluster *clust);
 
 
 // ==========================================================================================
@@ -82,7 +84,7 @@ int main() {
     message = createMessage(DATA, 3306, 1, (char*)"Le caliptus");
 
     sendDATAPacket(cluster, message);
-    while(1);
+    recvDATAPacket(cluster);
     sendRELEASEPacketC(cluster);
 }
 
@@ -145,7 +147,6 @@ void sendDATAPacket(struct Cluster *cluster_, struct Message *message) {
         //message_blocks[i].signature = message->signature; 
         dmptcp_proto_create_pkt2(&message_blocks[i], buff);
         int res = send(cluster->sockfds[i], buff, sizeof(struct Message), 0);
-        printf("==> one send res: %d\n", res);
     }
 
 }
