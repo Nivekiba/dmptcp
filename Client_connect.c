@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <time.h>
+
 #include "datastructures/Cluster.h"
 #include "datastructures/Message.h"
 #include "dmptcp_proto.h"
@@ -27,10 +29,16 @@ struct Cluster *cluster;
 //=========================== Function prototypes ===========================================
 
 void sendCONNPacket(int sockfd, struct Message *message, int token);
+// not implement yet
+// void sendCONNPacketC(struct Cluster *cluster_, struct Message *message, int token);
+
 void sendDATAPacket(struct Cluster *cluster_, struct Message *message);
+
 void sendRELEASEPacket(int sockfd);
+void sendRELEASEPacketC(struct Cluster *cluster_);
+
 void toServer(int sockfd, int *token);
-int connectToServer(struct sockaddr_in server_addr, int token, struct Message *message);
+int connectToServer(struct sockaddr_in server_addr, int token, struct Message *message, int index_serv);
 int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers);
 
 
@@ -39,7 +47,6 @@ int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_s
 // =========================== MAIN FUNCTION ================================================
 
 int main() {
-
     int number_of_outside_servers = 1;
     struct sockaddr_in *servaddr_array = calloc(number_of_outside_servers,
                                                 sizeof(servaddr_array[0]));
@@ -50,6 +57,9 @@ int main() {
     servaddr_array[0].sin_family = AF_INET; 
     servaddr_array[0].sin_addr.s_addr = inet_addr("127.0.0.1"); 
     servaddr_array[0].sin_port = htons(PORT);
+
+    // Cluster creation
+    cluster = createCluster(servaddr_array, number_of_outside_servers);
 
     
     /*servaddr_array[1].sin_family = AF_INET; 
@@ -63,15 +73,17 @@ int main() {
 
     for (i = 0; i < number_of_outside_servers; i++)
     {
-        connectToServer(servaddr_array[i], token, message);
+        connectToServer(servaddr_array[i], token, message, i);
     }
     printf("token = %d", generateToken(servaddr_array, number_of_outside_servers));
 
     // Function calls for sending DATA messages
-    
-    if(message->type == DATA)
-        sendDATAPacket(cluster, message);
+    char* msg = "Le caliptus";
+    message = createMessage(DATA, 3306, 1, (char*)"Le caliptus");
 
+    sendDATAPacket(cluster, message);
+    while(1);
+    sendRELEASEPacketC(cluster);
 }
 
 
@@ -106,6 +118,7 @@ void sendDATAPacket(struct Cluster *cluster_, struct Message *message) {
     // Then, we form message blocks and send it to servers
     // We count the number of blocks, we do this while the obtained number is greater than the number of servers in the cluster
     int number_of_blocks = 1;
+    printf("Number of blocks: %d\n", number_of_blocks);
     int current_message_block_size = STANDARD_MESSAGE_BLOCK_SIZE;
     do
     {
@@ -130,22 +143,28 @@ void sendDATAPacket(struct Cluster *cluster_, struct Message *message) {
         message_blocks[i].port = message->port;
         message_blocks[i].type = DATA;
         //message_blocks[i].signature = message->signature; 
-
         dmptcp_proto_create_pkt2(&message_blocks[i], buff);
-        send(cluster->sockfds[i], buff, sizeof(struct Message), 0);
-        
+        int res = send(cluster->sockfds[i], buff, sizeof(struct Message), 0);
+        printf("==> one send res: %d\n", res);
     }
 
 }
 
 void sendRELEASEPacket(int sockfd) {
-    struct Message* msg = createMessage(RELEASE, NULL, NULL, NULL);
+    struct Message* msg = createMessage(RELEASE, 0, 0, NULL);
     char *buff = malloc(MAX_BUFFER_LENGTH);
 
     dmptcp_proto_create_pkt2(msg, buff);
 
     send(sockfd, buff, sizeof(struct Message), 0);
     close(sockfd);
+}
+
+void sendRELEASEPacketC(struct Cluster *cluster){
+    int i=0;
+    for(i=0; i<cluster->nb_of_nodes; i++){
+        sendRELEASEPacket(cluster->sockfds[i]);
+    }
 }
 
 
@@ -173,7 +192,7 @@ struct Message* recvDATAPacket(struct Cluster *cluster_)
 //=========================  AUXILIARY FUNCTIONS ==============================================
 
 
-int connectToServer(struct sockaddr_in server_addr, int token, struct Message *message) {
+int connectToServer(struct sockaddr_in server_addr, int token, struct Message *message, int ind_server) {
     int sockfd;  
     int i = 0;
     
@@ -194,7 +213,7 @@ int connectToServer(struct sockaddr_in server_addr, int token, struct Message *m
     else
         printf("connected to the server..\n"); 
     
-
+    cluster->sockfds[i] = sockfd;
     // Functions for communication
 
     if(message->type == CONN)

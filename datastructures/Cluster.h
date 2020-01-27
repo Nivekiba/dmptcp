@@ -15,6 +15,7 @@ struct Cluster* createCluster(struct sockaddr_in *nodes, int number_of_nodes)
     int i = 0;
     struct Cluster *cluster = (struct Cluster *) malloc(sizeof(struct Cluster));
     cluster->nodes_ip = (struct sockaddr_in *) malloc(number_of_nodes * sizeof(struct sockaddr_in));
+    cluster->sockfds = malloc(number_of_nodes * sizeof(int));
     cluster->nb_of_nodes = number_of_nodes;
     
     for ( i = 0; i < number_of_nodes; i++)

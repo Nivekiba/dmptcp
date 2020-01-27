@@ -9,6 +9,8 @@
 #include <sys/socket.h> 
 #include <sys/types.h> 
 #include <arpa/inet.h>
+#include <time.h>
+
 #include "datastructures/Cluster.h"
 #include "datastructures/Message.h"
 #include "dmptcp_proto.h"
@@ -35,6 +37,7 @@ void initiateConn();
 
 int main()
 {
+    srand(time(NULL));
     initiateConn();
 }
 
@@ -190,24 +193,26 @@ void initiateConn() {
             printf("server accept failed...\n"); 
             exit(0); 
         } 
-        else
-            printf("server accept the client...\n");
+        else{
+            int random = rand();
+            printf("server accept the client...\nSeed: %d\n", random);
+        }
 
-        // pid_t child_pid = fork();
-        // if(child_pid < 0){
-        //     perror("Fork error");
-        // }
-        // if(child_pid == 0){
-            // Process client requests here
+        pid_t child_pid = fork();
+        if(child_pid < 0){
+            perror("Fork error");
+        }
+        if(child_pid == 0){
+            /* Process client requests here */
             requests(connfd);
             printf("Closed client");
-        // }
-        // else{
-        //     pid_t attended_pid = waitpid(child_pid, NULL, 0);
-        //     if(attended_pid != child_pid){
-        //         printf("Child error");
-        //     }
-        // }
+        }
+        else{
+            pid_t attended_pid = waitpid(child_pid, NULL, 0);
+            if(attended_pid != child_pid){
+                printf("Child error");
+            }
+        }
     }
        
 }
