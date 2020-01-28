@@ -11,10 +11,10 @@
 */
 enum MessageType
 {
-    CONN = 1,
-    DATA = 2,
-    RELEASE = 3,
-    ANSWER = 4
+    CONN = 0,
+    DATA = 1,
+    RELEASE = 2,
+    ANSWER = 3
 };
 
 //========================================================================
