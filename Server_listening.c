@@ -140,8 +140,13 @@ message_br:
     // DATA requests
     if(message->type == DATA){
         printf("Dar good message: %s\n", message->data);
+        
+        send(local_server_sock, message->data, sizeof(buffer), 0);
+        recv(local_server_sock, buffer, sizeof(buffer), 0);
 
-        struct Message* msg = createMessage(ANSWER, 21, message->num, NULL);
+        struct Message* msg = createMessage(ANSWER, 21, message->num, buffer);
+        printf("\nAnswer to send\n");
+        dmptcp_debug_pkt(msg);
         sendANSWERPacket(connfd, msg);
     }
 
