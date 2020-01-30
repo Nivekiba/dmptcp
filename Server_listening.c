@@ -89,11 +89,6 @@ message_br:
         printf("error while receiving data\n");
         exit(0);
     }
-    // We copy the content of the message in message variable
-    // dmptcp_proto_parse_pkt2(message, buffer);
-    printf("\n --------- Message debug ---------- \n");
-    dmptcp_debug_pkt(message);
-    printf("\n----------------------------------------\n");
 
     // CONN requests
     if(message->type == CONN) {
@@ -110,7 +105,7 @@ message_br:
 
             char* num_c = malloc(sizeof(char*));
             sprintf(num_c, "%d", number_connections_received);
-            struct Message* msg = createMessage(ANSWER, 21, message->num, num_c);
+            struct Message* msg = createMessage(ANSWER, message->port, message->num, num_c);
             sendANSWERPacket(connfd, msg);
         }
         // if a client attempt to connect to the server (not for the first time) and gives the right token
@@ -122,7 +117,7 @@ message_br:
 
             char* num_c = malloc(sizeof(char*));
             sprintf(num_c, "%d", number_connections_received);
-            struct Message* msg = createMessage(ANSWER, 21, message->num, num_c);
+            struct Message* msg = createMessage(ANSWER, message->port, message->num, num_c);
             sendANSWERPacket(connfd, msg);
         }
         // a client attempt to connect to the server (not for the first time) and gives the wrong token
@@ -132,7 +127,7 @@ message_br:
             
             char* num_c = malloc(sizeof(char*));
             sprintf(num_c, "%d", -1);
-            struct Message* msg = createMessage(ANSWER, 21, message->num, num_c);
+            struct Message* msg = createMessage(ANSWER, message->port, message->num, num_c);
             sendANSWERPacket(connfd, msg);
             
             close(connfd);
@@ -155,8 +150,8 @@ message_br:
         send(local_server_sock, message->data, sizeof(buffer), 0);
         recv(local_server_sock, buffer, sizeof(buffer), 0);
 
-        struct Message* msg = createMessage(ANSWER, 21, message->num, buffer);
-        printf("\nAnswer to send\n");
+        struct Message* msg = createMessage(ANSWER, message->port, message->num, buffer);
+        printf("\nDebug ASNWER packet\n");
         dmptcp_debug_pkt(msg);
         sendANSWERPacket(connfd, msg);
 
@@ -165,6 +160,7 @@ message_br:
 
     // RELEASE requests
     if(message->type == RELEASE) {
+        printf("\n=========== Client released connection ===========\n");
         close(connfd);
         number_connections_received --;
         if(number_connections_received == 0)
@@ -234,7 +230,7 @@ void initiateConn() {
         } 
         else{
             int random = rand();
-            printf("server accept the client...\nSeed: %d\n", random);
+            printf("\n\n\n\n\nServer accept the client...\nSeed: %d\n", random);
         }
 
         // pid_t child_pid = fork();

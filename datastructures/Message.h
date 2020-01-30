@@ -43,7 +43,7 @@ struct Message* createMessage(
     message->type = messageType;
     message->port = port;
     message->num = num;
-    if(data != NULL) sprintf(message->data, "%s", data);
+    if(data != NULL) sprintf(message->data, "%s\0", data);
 
     return message;
 }

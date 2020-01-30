@@ -21,7 +21,7 @@
 #define PORT 13100
 #define SA struct sockaddr
 #define MAX_BUFFER_LENGTH 1024 
-#define STANDARD_MESSAGE_BLOCK_SIZE 10
+#define STANDARD_MESSAGE_BLOCK_SIZE 32
 
 // Global variables
 
@@ -89,7 +89,7 @@ int main() {
     char *received = recvDATAPacket(cluster);
     printf("\nReceived message from servers == %s", received);
 
-    sendDATAPacket(cluster, message);
+    sendDATAPacket(cluster, msg);
     recvDATAPacket(cluster);
     sendRELEASEPacketC(cluster);
 }
@@ -189,7 +189,7 @@ char* recvDATAPacket(struct Cluster *clust)
                                         clust->nb_of_nodes * sizeof(struct Message));
 
     struct Message *tmp = (struct Message *) malloc(sizeof(struct Message));  
-    char received_message[clust->nb_of_nodes * 32 + 1];
+    char* received_message = malloc(clust->nb_of_nodes * 32 + 1);
                                     
     //char buff[MAX_BUFFER_LENGTH] = {0};
     int i, j;
@@ -205,9 +205,8 @@ char* recvDATAPacket(struct Cluster *clust)
             received_message[j] = received_messages[i].data[j];
         }*/
         strncat(received_message, received_messages[i].data, strlen(received_messages[i].data));
-        strncat(received_message, " ", 1);
     }
-    
+    printf("==> concaten received: %s",  received_message);
     return received_message;
 }
 
@@ -243,6 +242,7 @@ int connectToServer(struct sockaddr_in server_addr, int token, struct Message *m
         sendCONNPacket(sockfd, message, token);
     else if(message->type == RELEASE)
         sendRELEASEPacket(sockfd);
+    recvDATAPacket(cluster);
 }
 
 int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers) {
