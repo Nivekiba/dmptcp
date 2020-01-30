@@ -1,3 +1,4 @@
+#define _MESSAGE_H_
 #include <stdio.h> 
 #include <netdb.h> 
 #include <netinet/in.h> 
@@ -6,6 +7,7 @@
 #include <string.h> 
 #include <sys/socket.h> 
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <arpa/inet.h>
 #include <string.h>
 #include <time.h>
@@ -16,10 +18,10 @@
 
 // Constants
 
-#define PORT 13001
+#define PORT 13100
 #define SA struct sockaddr
 #define MAX_BUFFER_LENGTH 1024 
-#define STANDARD_MESSAGE_BLOCK_SIZE 128
+#define STANDARD_MESSAGE_BLOCK_SIZE 10
 
 // Global variables
 
@@ -33,7 +35,6 @@ void sendCONNPacket(int sockfd, struct Message *message, int token);
 // void sendCONNPacketC(struct Cluster *cluster_, struct Message *message, int token);
 
 void sendDATAPacket(struct Cluster *cluster_, char *message);
-char* recvDATAPacket(struct Cluster *cluster_);
 void sendRELEASEPacket(int sockfd);
 void sendRELEASEPacketC(struct Cluster *cluster_);
 
@@ -41,6 +42,7 @@ void toServer(int sockfd, int *token);
 int connectToServer(struct sockaddr_in server_addr, int token, struct Message *message, int index_serv);
 int generateToken(struct sockaddr_in *server_addresses, unsigned int number_of_servers);
 
+char* recvDATAPacket(struct Cluster *clust);
 
 
 // ==========================================================================================
@@ -85,9 +87,10 @@ int main() {
     
 
     char *received = recvDATAPacket(cluster);
-    printf("Received message from servers == %s", received);
+    printf("\nReceived message from servers == %s", received);
 
-    while(1);
+    sendDATAPacket(cluster, message);
+    recvDATAPacket(cluster);
     sendRELEASEPacketC(cluster);
 }
 
@@ -154,10 +157,8 @@ void sendDATAPacket(struct Cluster *cluster, char *message)
         message_blocks[i].type = DATA;
         //message_blocks[i].signature = message->signature; 
         dmptcp_proto_create_pkt2(&message_blocks[i], buff);
-        //int res = send(cluster->sockfds[i], buff, sizeof(struct Message), MSG_DONTWAIT);
-        //printf("\n==> one send res: %d\n", res);
+        int res = send(cluster->sockfds[i], buff, sizeof(struct Message), 0);
     }
-    printf("Out of the loop");
 }
 
 void sendRELEASEPacket(int sockfd) {
@@ -181,30 +182,30 @@ void sendRELEASEPacketC(struct Cluster *cluster){
 //=============================================================================================
 //========================= FUNCTION FOR RECEIVING DATA =======================================
 
-char* recvDATAPacket(struct Cluster *cluster_)
+char* recvDATAPacket(struct Cluster *clust)
 {
     // First, create a liste of received message blocks
     struct Message *received_messages = (struct Message *) malloc(
-                                        cluster_->nb_of_nodes * sizeof(struct Message));
+                                        clust->nb_of_nodes * sizeof(struct Message));
 
     struct Message *tmp = (struct Message *) malloc(sizeof(struct Message));  
-    char received_message[cluster_->nb_of_nodes * 32 + 1];
+    char received_message[clust->nb_of_nodes * 32 + 1];
                                     
     //char buff[MAX_BUFFER_LENGTH] = {0};
     int i, j;
-    for(i = 0; i < cluster_->nb_of_nodes; i++)
+    for(i = 0; i < clust->nb_of_nodes; i++)
     {
         recv(cluster->sockfds[i], tmp, sizeof(struct Message), 0);
         received_messages[tmp->num] = *tmp; 
     }
-    for (i = 0; i < cluster_->nb_of_nodes; i++)
+    for (i = 0; i < clust->nb_of_nodes; i++)
     {
         /*for (j = 0; j < strlen(received_messages[i].data); i++)
         {
             received_message[j] = received_messages[i].data[j];
         }*/
-        strcat(received_message, received_messages[i].data);
-        strcat(received_message, " ");
+        strncat(received_message, received_messages[i].data, strlen(received_messages[i].data));
+        strncat(received_message, " ", 1);
     }
     
     return received_message;

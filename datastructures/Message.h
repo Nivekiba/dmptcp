@@ -8,13 +8,14 @@
     CONN: establishment of connection between host
     DATA: for exchanging data
     RELEASE: to turn off connections
+    ANSWER: Acquitement send by the server to the client
 */
 enum MessageType
 {
-    CONN = 1,
-    DATA = 2,
-    RELEASE = 3,
-    ANSWER = 4
+    CONN = 0,
+    DATA = 1,
+    RELEASE = 2,
+    ANSWER = 3
 };
 
 //========================================================================
@@ -22,10 +23,10 @@ enum MessageType
 
 struct Message
 {
-    enum MessageType type;
-    char data[32];
-    unsigned short int port;
-    unsigned int num;
+    enum MessageType type; // le type du message comme defini plus haut
+    char data[32]; // les données à envoyer au serveur
+    unsigned short int port; // le port du serveur qui pointe sur le vrai service à réaliser
+    unsigned int num; // num de sequence, qui permet au client de resequencer les messages qui arrivent des différents serveurs
     //char signature[10];
 };
 

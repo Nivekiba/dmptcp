@@ -7,7 +7,8 @@
 #include <stdlib.h> 
 #include <string.h> 
 #include <sys/socket.h> 
-#include <sys/types.h> 
+#include <sys/types.h>  
+#include <sys/wait.h> 
 #include <arpa/inet.h>
 #include <time.h>
 
@@ -16,7 +17,7 @@
 #include "dmptcp_proto.h"
 
 // Constants
-#define PORT 13001
+#define PORT 13100
 #define SA struct sockaddr
 #define MAX_NUMBER_CONNECTION 200
 #define MAX_BUFFER_LENGTH 10240
@@ -31,6 +32,7 @@ int local_server_sock = -1;
 
 void requests(int connfd);
 void initiateConn();
+void sendANSWERPacket(int sock_id, struct Message* msg);
 
 //=============================================================================================
 //=========================== MAIN FUNCTION ===================================================
@@ -62,8 +64,8 @@ void connect_local_server(struct Message* msg){
 
     // connect the client socket to server socket 
     if (connect(local_server_sock, (SA*)&servaddr, sizeof(servaddr)) != 0) { 
-        perror("Conection to local server failed");
-        printf("connection with the local server failed on port %d...\n", msg->port); 
+        perror("Connection to local server failed");
+        printf("Connection with the local server failed on port %d...\n", msg->port); 
         exit(0); 
     } 
     else
@@ -97,7 +99,6 @@ message_br:
     if(message->type == CONN) {
 
         connect_local_server(message);
-        printf("the received data: %s", message->data);
         received_token = atoi(message->data);
         
         // if no client yet connected
@@ -105,7 +106,12 @@ message_br:
         {
             number_connections_received ++;
             token = received_token;
-            printf("Token == %d", token);
+            printf("\nToken == %d", token);
+
+            char* num_c = malloc(sizeof(char*));
+            sprintf(num_c, "%d", number_connections_received);
+            struct Message* msg = createMessage(ANSWER, 21, message->num, num_c);
+            sendANSWERPacket(connfd, msg);
         }
         // if a client attempt to connect to the server (not for the first time) and gives the right token
         else if(number_connections_received > 0 && received_token == token) 
@@ -113,28 +119,49 @@ message_br:
             printf("Connected to a client");
             number_connections_received ++;
             printf("Received Token == %d", received_token);
+
+            char* num_c = malloc(sizeof(char*));
+            sprintf(num_c, "%d", number_connections_received);
+            struct Message* msg = createMessage(ANSWER, 21, message->num, num_c);
+            sendANSWERPacket(connfd, msg);
         }
         // a client attempt to connect to the server (not for the first time) and gives the wrong token
         else if(number_connections_received > 0 && received_token != token) 
         {
             printf("Token == %d \t Received Token == %d", token, received_token);
+            
+            char* num_c = malloc(sizeof(char*));
+            sprintf(num_c, "%d", -1);
+            struct Message* msg = createMessage(ANSWER, 21, message->num, num_c);
+            sendANSWERPacket(connfd, msg);
+            
             close(connfd);
         }
-        
     }
 
     // DATA requests
     if(message->type == DATA){
         printf("Dar good message: %s\n", message->data);
         
+
         printf("\n --------------- Sending acknoledgment message to client ---------------\n");
-        struct Message *acknoledgment = (struct Message *) malloc(sizeof(struct Message));
+        /*struct Message *acknoledgment = (struct Message *) malloc(sizeof(struct Message));
         acknoledgment->type = ANSWER;
         acknoledgment->port = PORT;
         dmptcp_proto_parse_pkt2(acknoledgment, buffer);
-        send(connfd, buffer, sizeof(struct Message), 0);
+        send(connfd, buffer, sizeof(struct Message), 0);*/
+
+
+        send(local_server_sock, message->data, sizeof(buffer), 0);
+        recv(local_server_sock, buffer, sizeof(buffer), 0);
+
+        struct Message* msg = createMessage(ANSWER, 21, message->num, buffer);
+        printf("\nAnswer to send\n");
+        dmptcp_debug_pkt(msg);
+        sendANSWERPacket(connfd, msg);
 
     }
+
 
     // RELEASE requests
     if(message->type == RELEASE) {
@@ -210,21 +237,32 @@ void initiateConn() {
             printf("server accept the client...\nSeed: %d\n", random);
         }
 
-        pid_t child_pid = fork();
-        if(child_pid < 0){
-            perror("Fork error");
-        }
-        if(child_pid == 0){
+        // pid_t child_pid = fork();
+        // if(child_pid < 0){
+        //     perror("Fork error");
+        // }
+        // if(child_pid == 0){
             /* Process client requests here */
             requests(connfd);
             printf("Closed client");
-        }
-        else{
-            pid_t attended_pid = waitpid(child_pid, NULL, 0);
-            if(attended_pid != child_pid){
-                printf("Child error");
-            }
-        }
+        // }
+        // else{
+        //     pid_t attended_pid = waitpid(child_pid, NULL, 0);
+        //     if(attended_pid != child_pid){
+        //         printf("Child error");
+        //     }
+        // }
     }
        
+}
+
+void sendANSWERPacket(int sockfd, struct Message* message) {
+
+    char *buff = malloc(MAX_BUFFER_LENGTH);
+
+    // Next, we transform message into byte stream via dmptcp_proto
+    dmptcp_proto_create_pkt2(message, buff);
+    
+    // Then send the transformed message to the server
+    send(sockfd, buff, sizeof(struct Message), 0);
 }
