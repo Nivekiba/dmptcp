@@ -89,7 +89,9 @@ message_br:
     }
     // We copy the content of the message in message variable
     // dmptcp_proto_parse_pkt2(message, buffer);
+    printf("\n --------- Message debug ---------- \n");
     dmptcp_debug_pkt(message);
+    printf("\n----------------------------------------\n");
 
     // CONN requests
     if(message->type == CONN) {
@@ -124,6 +126,14 @@ message_br:
     // DATA requests
     if(message->type == DATA){
         printf("Dar good message: %s\n", message->data);
+        
+        printf("\n --------------- Sending acknoledgment message to client ---------------\n");
+        struct Message *acknoledgment = (struct Message *) malloc(sizeof(struct Message));
+        acknoledgment->type = ANSWER;
+        acknoledgment->port = PORT;
+        dmptcp_proto_parse_pkt2(acknoledgment, buffer);
+        send(connfd, buffer, sizeof(struct Message), 0);
+
     }
 
     // RELEASE requests
@@ -136,6 +146,8 @@ message_br:
         goto message_br;
     
 }
+
+
 
 
 // Process clients' requests
