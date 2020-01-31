@@ -1,6 +1,10 @@
 # DMPTCP
 
-## To avoid middleboxes difficulties, we have to install/launch the dmptcp_d in the middleboxes
+## Compilation
 
+```make server``` for lauching the dmptcp server. It must be run in each computer which want to use the protocol
+```make client``` for lauching a dmptcp client over multiple servers in order to test the protocol sending/receiving routines
 
-facon l'inscription (enregistrement) d'un nouveau protocole est fait sur linux, il est impossible d'ajouter le notre
+## For middleboxes
+
+To avoid middleboxes difficulties that concern classic TCP packet modifications, we have to install/launch also the driver (Server_listening) in the middleboxes.
